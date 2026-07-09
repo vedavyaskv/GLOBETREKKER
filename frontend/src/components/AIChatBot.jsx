@@ -8,10 +8,7 @@ const QUICK_PROMPTS = [
   '🏔️ Adventure destinations',
 ];
 
-const API_BASE_URL =
-  import.meta.env.PROD
-    ? 'https://globetrekker-travel-website-2.onrender.com'
-    : 'http://localhost:5000';
+import { API_BASE_URL } from "../utils/api";
 
 export default function AIChatBot() {
   const [isOpen, setIsOpen] = useState(false);
