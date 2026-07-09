@@ -6,7 +6,14 @@ const jwt = require("jsonwebtoken");
 const cors = require("cors");
 const helmet = require("helmet");
 const rateLimit = require("express-rate-limit");
-const { Resend } = require("resend");
+const { sendEmail } = require("./utils/emailService");
+const {
+  baseTemplate,
+  welcomeTemplate,
+  bookingTemplate,
+  subscribeTemplate,
+  contactReceivedTemplate
+} =require("./utils/emailTemplates");
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -16,7 +23,6 @@ if (!process.env.JWT_SECRET) {
 
 const JWT_SECRET = process.env.JWT_SECRET;
 
-const resend = new Resend(process.env.RESEND_API_KEY);
 
 const { GoogleGenerativeAI } = require("@google/generative-ai");
 
@@ -156,15 +162,56 @@ const auth = async (req, res, next) => {
 app.post("/signup", async (req, res) => {
   try {
     const { username, email, password } = req.body;
-    if (!email || !password) return res.status(400).json({ error: "Email and password required" });
-    const existing = await User.findOne({ $or: [{ email }, { username }] });
-    if (existing) return res.status(409).json({ error: "Account exists, please login" });
+
+    if (!email || !password) {
+      return res.status(400).json({
+        error: "Email and password required"
+      });
+    }
+
+    const existing = await User.findOne({
+      $or: [
+        { email },
+        { username }
+      ]
+    });
+
+    if (existing) {
+      return res.status(409).json({
+        error: "Account exists, please login"
+      });
+    }
+
     const passwordHash = await bcrypt.hash(password, 12);
-    await new User({ username, email, passwordHash }).save();
-    res.json({ message: "Signup successful! Please log in." });
+
+    const user = await new User({
+      username,
+      email,
+      passwordHash
+    }).save();
+
+    try {
+      await sendEmail({
+        to: user.email,
+        subject: "🌍 Welcome to GlobeTrekker!",
+        html: welcomeTemplate(user.username)
+      });
+
+      console.log("✅ Welcome email sent");
+    } catch (emailErr) {
+      console.error("❌ Welcome email failed:", emailErr.message);
+    }
+
+    res.json({
+      message: "Signup successful! Please log in."
+    });
+
   } catch (err) {
     console.error("SIGNUP:", err);
-    res.status(500).json({ error: "Internal server error" });
+
+    res.status(500).json({
+      error: "Internal server error"
+    });
   }
 });
 
@@ -227,93 +274,266 @@ app.get("/reviews", async (req, res) => {
 });
 
 app.post("/register", bookingLimiter, async (req, res) => {
-  const { name, email, phone, gender, destination, package: pkg, date, notes, travelers, totalPrice } = req.body;
-  if (!name || !email || !phone || !gender || !destination || !pkg || !date)
-    return res.status(400).json({ error: "All fields are required" });
   try {
-    const bookingId = "GT" + Date.now().toString(36).toUpperCase();
-    await Registration.create({ name, email, phone, gender, destination, package: pkg, date, notes, travelers: travelers || 1, totalPrice, bookingId, status: "confirmed" });
+    const {
+      name,
+      email,
+      phone,
+      gender,
+      destination,
+      package: pkg,
+      date,
+      notes,
+      travelers,
+      totalPrice,
+    } = req.body;
+
+    if (
+      !name ||
+      !email ||
+      !phone ||
+      !gender ||
+      !destination ||
+      !pkg ||
+      !date
+    ) {
+      return res.status(400).json({
+        error: "All fields are required",
+      });
+    }
+
+    const bookingId =
+      "GT" + Date.now().toString(36).toUpperCase();
+
+    const booking = await Registration.create({
+      name,
+      email,
+      phone,
+      gender,
+      destination,
+      package: pkg,
+      date,
+      notes,
+      travelers: travelers || 1,
+      totalPrice,
+      bookingId,
+      status: "confirmed",
+    });
+
     try {
-      const emailResult = await resend.emails.send({
-        from: `GlobeTrekker <${process.env.EMAIL_FROM || "onboarding@resend.dev"}>`,
+      await sendEmail({
         to: email,
-        subject: `🎉 Booking Confirmed - ${destination} | ${bookingId}`,
+        subject: `🎉 Booking Confirmed | ${bookingId}`,
+        html: bookingTemplate({
+          name,
+          destination,
+          package: pkg,
+          date,
+          travelers: travelers || 1,
+          totalPrice,
+          bookingId,
+        }),
+      });
+
+      console.log("✅ Booking confirmation email sent.");
+    } catch (emailErr) {
+      console.error(
+        "❌ Booking email failed:",
+        emailErr.message
+      );
+    }
+
+    try {
+      await sendEmail({
+        to: process.env.EMAIL_ADMIN,
+        subject: `🆕 New Booking - ${bookingId}`,
         html: `
-          <div style="font-family:Poppins,sans-serif;max-width:600px;margin:auto;background:#f7fafd;border-radius:16px;overflow:hidden">
-            <div style="background:#07406e;padding:32px;text-align:center">
-              <h1 style="color:white;margin:0;font-size:28px">🌍 GlobeTrekker</h1>
-              <p style="color:#a8d4f5;margin:8px 0 0">Your adventure awaits!</p>
-            </div>
-            <div style="padding:32px">
-              <h2 style="color:#07406e">Booking Confirmed! 🎉</h2>
-              <p>Hi <strong>${name}</strong>, your trip is all set!</p>
-              <div style="background:#fff;border-radius:12px;padding:24px;border-left:4px solid #07406e;margin:20px 0">
-                <p><strong>📍 Destination:</strong> ${destination}</p>
-                <p><strong>📦 Package:</strong> ${pkg}</p>
-                <p><strong>📅 Date:</strong> ${date}</p>
-                <p><strong>👥 Travelers:</strong> ${travelers || 1}</p>
-                <p><strong>🔖 Booking ID:</strong> <code style="background:#f0f4f8;padding:4px 8px;border-radius:4px">${bookingId}</code></p>
-                ${totalPrice ? `<p><strong>💰 Total:</strong> ₹${Number(totalPrice).toLocaleString()}</p>` : ""}
-              </div>
-              <p style="color:#666">Our team will contact you within 24 hours with your detailed itinerary.</p>
-              <p style="color:#07406e;font-weight:600">Happy Travels! 🌏</p>
-            </div>
-          </div>
+          <h2>New Booking Received</h2>
+
+          <hr>
+
+          <p><strong>Name:</strong> ${name}</p>
+
+          <p><strong>Email:</strong> ${email}</p>
+
+          <p><strong>Phone:</strong> ${phone}</p>
+
+          <p><strong>Destination:</strong> ${destination}</p>
+
+          <p><strong>Package:</strong> ${pkg}</p>
+
+          <p><strong>Date:</strong> ${date}</p>
+
+          <p><strong>Travelers:</strong> ${travelers || 1}</p>
+
+          <p><strong>Total:</strong>
+          ₹${Number(totalPrice || 0).toLocaleString()}</p>
+
+          <p><strong>Booking ID:</strong>
+          ${bookingId}</p>
+
+          ${
+            notes
+              ? `<p><strong>Notes:</strong><br>${notes}</p>`
+              : ""
+          }
         `,
       });
-      if (emailResult.error) {
-        console.error("EMAIL ERROR:");
-        console.error(emailResult.error);
-    } else {
-        console.log("EMAIL SENT:");
-        console.log(emailResult.data);
-      }
-    } catch (emailErr) { console.error("EMAIL:", emailErr); }
-    res.json({ message: "Registration successful", bookingId });
+
+      console.log("✅ Admin booking notification sent.");
+    } catch (adminErr) {
+      console.error(
+        "❌ Admin email failed:",
+        adminErr.message
+      );
+    }
+
+    res.json({
+      message: "Registration successful!",
+      bookingId,
+      booking,
+    });
+
   } catch (err) {
     console.error("REGISTER:", err);
-    res.status(500).json({ error: "Internal server error" });
+
+    res.status(500).json({
+      error: "Internal server error",
+    });
   }
 });
 
 app.post("/subscribe", async (req, res) => {
-  const { email } = req.body;
-  if (!email) return res.status(400).json({ error: "Email required" });
   try {
-    const existing = await Subscriber.findOne({ email });
-    if (existing) return res.status(409).json({ message: "Already subscribed!" });
-    await Subscriber.create({ email });
-    try {
-      await resend.emails.send({
-        from: `GlobeTrekker <${process.env.EMAIL_FROM || "onboarding@resend.dev"}>`,
-        to: email,
-        subject: "🌍 Welcome to GlobeTrekker Newsletter!",
-        html: `<div style="font-family:Poppins,sans-serif;max-width:600px;margin:auto"><div style="background:#07406e;padding:32px;text-align:center;border-radius:12px 12px 0 0"><h1 style="color:white;margin:0">🌍 GlobeTrekker</h1></div><div style="padding:32px;background:#f7fafd;border-radius:0 0 12px 12px"><h2 style="color:#07406e">Welcome to our travel family! ✈️</h2><p>You're now subscribed to exclusive travel deals, destination guides, and insider tips.</p><p>Get ready to explore the world! 🗺️</p></div></div>`,
+
+    const { email } = req.body;
+
+    if (!email) {
+      return res.status(400).json({
+        error: "Email is required"
       });
-    } catch (e) { console.error("EMAIL:", e); }
-    res.json({ message: "Subscribed successfully!" });
+    }
+
+    const existing = await Subscriber.findOne({ email });
+
+    if (existing) {
+      return res.status(409).json({
+        message: "Already subscribed!"
+      });
+    }
+
+    await Subscriber.create({ email });
+
+    await sendEmail({
+      to: email,
+      subject: "🌍 Welcome to GlobeTrekker Newsletter",
+      html: subscribeTemplate(email)
+    });
+
+    await sendEmail({
+      to: process.env.EMAIL_ADMIN,
+      subject: "📩 New Newsletter Subscriber",
+      html: `
+      <h2>New Subscriber</h2>
+
+      <p><b>Email:</b> ${email}</p>
+
+      <p>Total newsletter list updated.</p>
+      `
+    });
+
+    res.json({
+      message: "Subscribed successfully!"
+    });
+
   } catch (err) {
-    res.status(500).json({ error: "Server error" });
+
+    console.error(err);
+
+    res.status(500).json({
+      error: "Server Error"
+    });
+
   }
 });
 
 app.post("/contact", async (req, res) => {
-  const { name, email, message } = req.body;
-  if (!name || !email || !message) return res.status(400).json({ error: "All fields required" });
+
   try {
-    await Contact.create({ name, email, message });
-    try {
-      await resend.emails.send({
-        from: "GlobeTrekker <onboarding@resend.dev>",
-        to: process.env.EMAIL_ADMIN,
-        subject: `New Contact - ${name}`,
-        html: `<h2>New Contact</h2><p><b>Name:</b> ${name}</p><p><b>Email:</b> ${email}</p><p><b>Message:</b> ${message}</p>`,
+
+    const {
+      name,
+      email,
+      message
+    } = req.body;
+
+    if (!name || !email || !message) {
+      return res.status(400).json({
+        error: "All fields are required"
       });
-    } catch (e) { console.error("EMAIL:", e); }
-    res.json({ message: "Message sent successfully!" });
+    }
+
+    await Contact.create({
+      name,
+      email,
+      message
+    });
+
+    await sendEmail({
+
+
+      to: process.env.EMAIL_ADMIN,
+
+      subject: `📩 New Contact Message from ${name}`,
+
+      html: baseTemplate(
+        "New Contact Message",
+        `
+        <h2>Someone contacted GlobeTrekker</h2>
+
+        <p><b>Name:</b> ${name}</p>
+
+        <p><b>Email:</b> ${email}</p>
+
+        <p><b>Message:</b></p>
+
+        <div
+        style="
+        background:#f7f7f7;
+        padding:15px;
+        border-radius:10px;">
+        ${message}
+        </div>
+        `
+      )
+
+    });
+
+    await sendEmail({
+
+
+      to: email,
+
+      subject: "✅ We received your message",
+
+      html: contactReceivedTemplate(name)
+
+    });
+
+    res.json({
+      message: "Message sent successfully!"
+    });
+
   } catch (err) {
-    res.status(500).json({ error: "Server error" });
+
+    console.error(err);
+
+    res.status(500).json({
+      error: "Server Error"
+    });
+
   }
+
 });
 
 app.get("/weather/:city", async (req, res) => {
@@ -476,6 +696,24 @@ Use Indian Rupees.
     res.status(500).json({
       error: "Failed to generate itinerary"
     });
+  }
+});
+
+app.get("/test-email", async (req, res) => {
+  try {
+    await sendEmail({
+      to: process.env.EMAIL_ADMIN,
+      subject: "GlobeTrekker Email Test",
+      html: `
+        <h1>🎉 Success!</h1>
+        <p>Your Gmail SMTP is working correctly.</p>
+      `,
+    });
+
+    res.send("Email sent successfully!");
+  } catch (err) {
+    console.error(err);
+    res.status(500).send("Email failed.");
   }
 });
 

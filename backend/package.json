@@ -17,9 +17,9 @@
     "helmet": "^8.0.0",
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.18.1",
+    "nodemailer": "^9.0.3",
     "openai": "^6.42.0",
-    "react-markdown": "^10.1.0",
-    "resend": "^6.5.2"
+    "react-markdown": "^10.1.0"
   },
   "devDependencies": {
     "nodemon": "^3.1.10"
