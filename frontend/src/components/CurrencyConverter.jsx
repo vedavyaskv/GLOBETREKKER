@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { API_BASE_URL } from "../utils/api";
 
 const CURRENCIES = [
   { code: 'INR', name: 'Indian Rupee', symbol: '₹', flag: '🇮🇳' },
@@ -25,12 +26,11 @@ export default function CurrencyConverter() {
   const [to, setTo] = useState('USD');
   const [rates, setRates] = useState(FALLBACK_RATES);
   const [lastUpdated, setLastUpdated] = useState('Approximate rates');
-  const [converting, setConverting] = useState(false);
 
   useEffect(() => {
     const fetchRates = async () => {
       try {
-        const res = await fetch('https://api.frankfurter.app/latest?from=INR');
+        const res = await fetch(`${API_BASE_URL}/api/currency`);
         if (res.ok) {
           const data = await res.json();
           setRates({ INR: 1, ...data.rates });
