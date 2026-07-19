@@ -1,31 +1,33 @@
-# 🌍 GlobeTrekker — Premium Travel Platform v2.0
+#  GlobeTrekker — Premium Travel Platform v2.0
 
 A production-quality full-stack travel website built with **React + Node.js + MongoDB**.
 
-## ✨ Features
+Website Link: https://globetrekker-rho.vercel.app/
+
+##  Features
 
 | Feature | Status |
 |---|---|
-| Modern Glassmorphism UI | ✅ |
-| Dark / Light Mode | ✅ |
-| JWT Authentication | ✅ |
-| User Dashboard | ✅ |
-| Wishlist System | ✅ |
-| Reviews & Ratings | ✅ |
-| Booking System | ✅ |
-| Email Notifications | ✅ |
-| AI Travel Chatbot (GlobeBot) | ✅ |
-| AI Trip Planner | ✅ |
-| Interactive World Map | ✅ |
-| Live Weather Widget | ✅ |
-| Currency Converter | ✅ |
-| Admin Panel | ✅ |
-| SEO Optimization | ✅ |
-| Fully Responsive | ✅ |
+| Modern Glassmorphism UI | 
+| Dark / Light Mode | 
+| JWT Authentication | 
+| User Dashboard | 
+| Wishlist System | 
+| Reviews & Ratings | 
+| Booking System | 
+| Email Notifications | 
+| AI Travel Chatbot (GlobeBot) | 
+| AI Trip Planner | 
+| Interactive World Map | 
+| Live Weather Widget | 
+| Currency Converter | 
+| Admin Panel | 
+| SEO Optimization | 
+| Fully Responsive | 
 
 ---
 
-## 🚀 Quick Setup
+##  Quick Setup
 
 ### 1. Backend Setup
 
@@ -46,15 +48,15 @@ npm run dev
 
 ---
 
-## 🔑 Required API Keys
+##  Required API Keys
 
 ### Backend (`backend/.env`)
 
 | Variable | Where to Get | Required? |
 |---|---|---|
-| `MONGO_URI` | [MongoDB Atlas](https://cloud.mongodb.com) → Free cluster | ✅ YES |
-| `JWT_SECRET` | Any random string (32+ chars) | ✅ YES |
-| `ADMIN_KEY` | Any secret string you choose | ✅ YES |
+| `MONGO_URI` | [MongoDB Atlas](https://cloud.mongodb.com) → Free cluster |  YES |
+| `JWT_SECRET` | Any random string (32+ chars) |  YES |
+| `ADMIN_KEY` | Any secret string you choose |  YES |
 | `RESEND_API_KEY` | [Resend.com](https://resend.com) → Free tier | For emails |
 | `EMAIL_FROM` | Verified domain on Resend | For emails |
 | `EMAIL_ADMIN` | Your email | For contact alerts |
@@ -70,7 +72,7 @@ npm run dev
 
 ---
 
-## 🌐 Deployment
+##  Deployment
 
 ### Backend → Render.com (Free)
 1. Push `backend/` to GitHub
@@ -87,7 +89,7 @@ npm run dev
 
 ---
 
-## 📁 Project Structure
+##  Project Structure
 
 ```
 globetrekker-upgraded/
@@ -133,7 +135,7 @@ globetrekker-upgraded/
 
 ---
 
-## 🤖 AI Features Setup
+##  AI Features Setup
 
 The AI Chatbot (GlobeBot) and AI Trip Planner run through backend API endpoints.
 
@@ -151,7 +153,7 @@ You can connect these endpoints to:
 
 The frontend communicates only with your backend API.
 
-## 📧 Email Setup (Resend.com)
+##  Email Setup (Resend.com)
 
 1. Go to [Resend.com](https://resend.com) and create a free account
 2. Get your API key from the dashboard
@@ -160,13 +162,13 @@ The frontend communicates only with your backend API.
 
 ---
 
-## 🗺️ Interactive Map
+##  Interactive Map
 
 Uses **Leaflet.js** with OpenStreetMap tiles — no API key required!
 
 ---
 
-## 🌦️ Weather Widget
+##  Weather Widget
 
 - Without API key: Shows mock data (still functional)
 - With key: Shows live weather from OpenWeatherMap
@@ -174,14 +176,10 @@ Uses **Leaflet.js** with OpenStreetMap tiles — no API key required!
 
 ---
 
-## 💱 Currency Converter
+##  Currency Converter
 
 Uses **Frankfurter.app** API — completely free, no API key needed!
 
 ---
-
-## 📞 Support
-
-Questions? Contact: support@globetrekker.in
 
 Built with ❤️ for travelers everywhere.
