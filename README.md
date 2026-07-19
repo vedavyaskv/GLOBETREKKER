@@ -6,8 +6,8 @@ Website Link: https://globetrekker-rho.vercel.app/
 
 ##  Features
 
-| Feature | Status |
-|---|---|
+| Feature | 
+|---|
 | Modern Glassmorphism UI | 
 | Dark / Light Mode | 
 | JWT Authentication | 
